@@ -42,8 +42,10 @@ app.Run();
 
 public class MyConfig
 {
+    public string ArrangeMode {get; set;} = "DEFAULT";
+    public string ArrangeWord {get; set;} = "DEFAULT";
+    public int ArrangeIndex {get; set;} = -1;
     public UInt32 ColumnCount {get; set;} = 0;
-    public string HeaderWord {get; set;} = "DEFAULT";
     public string InputCsvFile {get; set;} = "DEFAULT";
     public string InputCsvDelimiter {get; set;} = "DEFAULT";
     public string InputCsvEncoding {get; set;} = "DEFAULT";
@@ -54,6 +56,7 @@ public class MyConfig
     public string OutputCsvEncoding {get; set;} = "DEFAULT";
     public string OutputCsvNewLine {get; set;} = "DEFAULT";
     public string OutputCsvHasHeader {get; set;} = "DEFAULT";
+    public string OutputCsvHeaderWord {get; set;} = "DEFAULT";
 }
 
 [Command("csv")]
@@ -77,8 +80,10 @@ public class CsvApp : ConsoleAppBase
         var encodeingInput = Encoding.UTF8; // default encodeing
         var encodeingOutput = Encoding.UTF8; // default encodeing
 
+        string arrangeMode = config.Value.ArrangeMode;
+        string arrangeWord = config.Value.ArrangeWord;
+        int arrangeIndex = config.Value.ArrangeIndex;
         UInt32 columnCount = config.Value.ColumnCount;
-        string headerWord = config.Value.HeaderWord;
         string inputCsvFile = config.Value.InputCsvFile;
         string inputCsvDelimiter = config.Value.InputCsvDelimiter;
         string inputCsvEncoding = config.Value.InputCsvEncoding;
@@ -88,15 +93,31 @@ public class CsvApp : ConsoleAppBase
         string outputCsvDelimiter = config.Value.OutputCsvDelimiter;
         string outputCsvEncoding = config.Value.OutputCsvEncoding;
         string outputCsvNewLine = config.Value.OutputCsvNewLine;
+        string outputCsvHeaderWord = config.Value.OutputCsvHeaderWord;
 
+        if (String.IsNullOrEmpty(arrangeMode) || arrangeMode.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("ArrangeMode is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+        else if ( arrangeMode.CompareTo("pass") != 0 && arrangeMode.CompareTo("reject") != 0 )
+        {
+            logger.ZLogError("ArrangeMode is not [pass]/[reject] value. Check to appsettings.json.");
+            return 1;
+        }
+        if (String.IsNullOrEmpty(arrangeWord) || arrangeWord.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("ArrangeWord is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+        if (arrangeIndex < 0)
+        {
+            logger.ZLogError("ArrangeIndex is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
         if (columnCount == 0)
         {
             logger.ZLogError("ColumnCount is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(headerWord) || headerWord.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("HeaderWord is empty/default value. Check to appsettings.json.");
             return 1;
         }
         if (String.IsNullOrEmpty(inputCsvFile) || inputCsvFile.CompareTo("DEFAULT") == 0)
@@ -145,6 +166,11 @@ public class CsvApp : ConsoleAppBase
             logger.ZLogError("OutputCsvNewLine is empty/default value. Check to appsettings.json.");
             return 1;
         }
+        if (String.IsNullOrEmpty(outputCsvHeaderWord) || outputCsvHeaderWord.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("HeaderWord is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
 
         try
         {
@@ -187,12 +213,14 @@ public class CsvApp : ConsoleAppBase
                 while (csvReader.Read())
                 {
                     Dictionary<string, string> tempData = new Dictionary<string, string>();
-                    var index1 = csvReader.GetField(1);
+                    var index1 = csvReader.GetField(arrangeIndex);
                     logger.ZLogDebug("index1:{0}", index1);
-                    switch (index1)
+                    if (arrangeMode.CompareTo("pass") == 0)
                     {
-                        case "DATA":
-                            logger.ZLogDebug("index1 is DATA");
+                        // pass
+                        if (arrangeWord.CompareTo(index1) == 0)
+                        {
+                            logger.ZLogDebug("[pass] index1 is {0}. Add!", index1);
                             for (int i = 0; i < columnCount; i++)
                             {
                                 var tempValue = csvReader.GetField(i);
@@ -203,22 +231,43 @@ public class CsvApp : ConsoleAppBase
                                 tempData.Add(i.ToString(), tempValue);
                             }
                             tempCsv.Add(tempData);
-                            break;
-                        case "TOP":
-                            logger.ZLogDebug("index1 is TOP");
-                            break;
-                        case "END":
-                            logger.ZLogDebug("index1 is END");
-                            break;
-                        default:
-                            logger.ZLogDebug("index1 is ?");
-                            break;
+                        }
+                        else
+                        {
+                            logger.ZLogDebug("[pass] index1 is {0}. no Add.", index1);
+                        }
                     }
-                }
+                    else
+                    {
+                        // reject
+                        if (arrangeWord.CompareTo(index1) != 0)
+                        {
+                            logger.ZLogDebug("[reject] index1 is {0}. Add!", index1);
+                            for (int i = 0; i < columnCount; i++)
+                            {
+                                var tempValue = csvReader.GetField(i);
+                                if (string.IsNullOrEmpty(tempValue))
+                                {
+                                    tempValue = "";
+                                }
+                                tempData.Add(i.ToString(), tempValue);
+                            }
+                            tempCsv.Add(tempData);
+                        }
+                        else
+                        {
+                            logger.ZLogDebug("[reject] index1 is {0}. no Add.", index1);
+                        }
+                    }
+                 }
             }
         }
 
 
+        if (File.Exists(outputCsvFile))
+        {
+            File.Delete(outputCsvFile);
+        }
         var writeCsvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
             HasHeaderRecord = false,
@@ -231,7 +280,7 @@ public class CsvApp : ConsoleAppBase
         {
             // header
             writerWriter.NewLine = outputCsvNewLine;
-            writerWriter.WriteLine(headerWord);
+            writerWriter.WriteLine(outputCsvHeaderWord);
 
             // data
             using (var csvWriter = new CsvWriter(writerWriter, writeCsvConfig))
