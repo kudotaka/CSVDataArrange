@@ -46,12 +46,10 @@ public class MyConfig
     public string ArrangeWord {get; set;} = "DEFAULT";
     public int ArrangeIndex {get; set;} = -1;
     public UInt32 ColumnCount {get; set;} = 0;
-    public string InputCsvFile {get; set;} = "DEFAULT";
     public string InputCsvDelimiter {get; set;} = "DEFAULT";
     public string InputCsvEncoding {get; set;} = "DEFAULT";
     public string InputCsvNewLine {get; set;} = "DEFAULT";
     public string InputCsvHasHeader {get; set;} = "DEFAULT";
-    public string OutputCsvFile {get; set;} = "DEFAULT";
     public string OutputCsvDelimiter {get; set;} = "DEFAULT";
     public string OutputCsvEncoding {get; set;} = "DEFAULT";
     public string OutputCsvNewLine {get; set;} = "DEFAULT";
@@ -72,9 +70,17 @@ public class CsvApp : ConsoleAppBase
     }
 
     [Command("arrange")]
-    public int Arrange()
+    public int Arrange(string inputfile, string outputfile)
     {
         logger.ZLogDebug("start arrange()");
+
+        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(outputfile))
+        {
+            logger.ZLogError($"Error: arg is NullOrEmpty.");
+            return 1;
+        }
+        string inputCsvFile = inputfile;
+        string outputCsvFile = outputfile;
 
         bool bInputCsvHasHeader = false;
         var encodeingInput = Encoding.UTF8; // default encodeing
@@ -84,12 +90,10 @@ public class CsvApp : ConsoleAppBase
         string arrangeWord = config.Value.ArrangeWord;
         int arrangeIndex = config.Value.ArrangeIndex;
         UInt32 columnCount = config.Value.ColumnCount;
-        string inputCsvFile = config.Value.InputCsvFile;
         string inputCsvDelimiter = config.Value.InputCsvDelimiter;
         string inputCsvEncoding = config.Value.InputCsvEncoding;
         string inputCsvNewLine = config.Value.InputCsvNewLine;
         string inputCsvHasHeader = config.Value.InputCsvHasHeader;
-        string outputCsvFile = config.Value.OutputCsvFile;
         string outputCsvDelimiter = config.Value.OutputCsvDelimiter;
         string outputCsvEncoding = config.Value.OutputCsvEncoding;
         string outputCsvNewLine = config.Value.OutputCsvNewLine;
@@ -120,11 +124,6 @@ public class CsvApp : ConsoleAppBase
             logger.ZLogError("ColumnCount is empty/default value. Check to appsettings.json.");
             return 1;
         }
-        if (String.IsNullOrEmpty(inputCsvFile) || inputCsvFile.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("InputCsvFile is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
         if (String.IsNullOrEmpty(inputCsvDelimiter) || inputCsvDelimiter.CompareTo("DEFAULT") == 0)
         {
             logger.ZLogError("InputCsvDelimiter is empty/default value. Check to appsettings.json.");
@@ -146,11 +145,6 @@ public class CsvApp : ConsoleAppBase
             return 1;
         }
 
-        if (String.IsNullOrEmpty(outputCsvFile) || outputCsvFile.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("OutputCsvFile is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
         if (String.IsNullOrEmpty(outputCsvDelimiter) || outputCsvDelimiter.CompareTo("DEFAULT") == 0)
         {
             logger.ZLogError("OutputCsvDelimiter is empty/default value. Check to appsettings.json.");
