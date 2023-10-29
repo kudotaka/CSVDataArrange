@@ -42,6 +42,7 @@ app.Run();
 
 public class MyConfig
 {
+    public UInt32 ColumnCount {get; set;} = 0;
     public string HeaderWord {get; set;} = "DEFAULT";
     public string InputCsvFile {get; set;} = "DEFAULT";
     public string InputCsvDelimiter {get; set;} = "DEFAULT";
@@ -76,6 +77,7 @@ public class CsvApp : ConsoleAppBase
         var encodeingInput = Encoding.UTF8; // default encodeing
         var encodeingOutput = Encoding.UTF8; // default encodeing
 
+        UInt32 columnCount = config.Value.ColumnCount;
         string headerWord = config.Value.HeaderWord;
         string inputCsvFile = config.Value.InputCsvFile;
         string inputCsvDelimiter = config.Value.InputCsvDelimiter;
@@ -87,6 +89,11 @@ public class CsvApp : ConsoleAppBase
         string outputCsvEncoding = config.Value.OutputCsvEncoding;
         string outputCsvNewLine = config.Value.OutputCsvNewLine;
 
+        if (columnCount == 0)
+        {
+            logger.ZLogError("ColumnCount is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
         if (String.IsNullOrEmpty(headerWord) || headerWord.CompareTo("DEFAULT") == 0)
         {
             logger.ZLogError("HeaderWord is empty/default value. Check to appsettings.json.");
@@ -159,7 +166,7 @@ public class CsvApp : ConsoleAppBase
             encodeingOutput = Encoding.GetEncoding("Shift_JIS");
         }
 
-        var appDataRecords = new List<AppData>();
+        List<Dictionary<string, string>> tempCsv = new List<Dictionary<string, string>>();
         var readCsvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
             HasHeaderRecord = bInputCsvHasHeader,
@@ -172,8 +179,6 @@ public class CsvApp : ConsoleAppBase
         {
             using (var csvReader = new CsvReader(csvStreamReader, readCsvConfig))
             {
-                csvReader.Context.RegisterClassMap<AppDataMap>();
-
                 if (bInputCsvHasHeader)
                 {
                     csvReader.Read();
@@ -181,17 +186,23 @@ public class CsvApp : ConsoleAppBase
                 }
                 while (csvReader.Read())
                 {
+                    Dictionary<string, string> tempData = new Dictionary<string, string>();
                     var index1 = csvReader.GetField(1);
                     logger.ZLogDebug("index1:{0}", index1);
                     switch (index1)
                     {
                         case "DATA":
                             logger.ZLogDebug("index1 is DATA");
-                            var appdata = csvReader.GetRecord<AppData>();
-                            if (appdata != null)
+                            for (int i = 0; i < columnCount; i++)
                             {
-                                appDataRecords.Add(appdata);
+                                var tempValue = csvReader.GetField(i);
+                                if (string.IsNullOrEmpty(tempValue))
+                                {
+                                    tempValue = "";
+                                }
+                                tempData.Add(i.ToString(), tempValue);
                             }
+                            tempCsv.Add(tempData);
                             break;
                         case "TOP":
                             logger.ZLogDebug("index1 is TOP");
@@ -225,31 +236,18 @@ public class CsvApp : ConsoleAppBase
             // data
             using (var csvWriter = new CsvWriter(writerWriter, writeCsvConfig))
             {
-                csvWriter.WriteRecords(appDataRecords);
+                foreach (var dic in tempCsv)
+                {
+                    for (int i = 0; i < columnCount; i++)
+                    {
+                        csvWriter.WriteField(dic[i.ToString()]);
+                    }
+                    csvWriter.NextRecord();
+                }
             }
         }
 
         logger.ZLogInformation("FILE:{0} is success.", inputCsvFile);
         return 0;
-    }
-}
-
-
-public class AppData
-{
-    public string C0 { get; set; } = default!;
-    public string C1 { get; set; } = default!;
-    public string C2 { get; set; } = default!;
-    public string C3 { get; set; } = default!;
-}
-
-public sealed class AppDataMap : ClassMap<AppData>
-{
-    public AppDataMap()
-    {
-        Map(m => m.C0).Index(0);
-        Map(m => m.C1).Index(1);
-        Map(m => m.C2).Index(2);
-        Map(m => m.C3).Index(3);
     }
 }
