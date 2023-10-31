@@ -7,6 +7,7 @@ using CsvHelper.Configuration;
 using System.Globalization;
 using CsvHelper;
 using System.Text;
+using System.Text.RegularExpressions;
 
 
 var builder = ConsoleApp.CreateBuilder(args);
@@ -104,9 +105,10 @@ public class CsvApp : ConsoleAppBase
             logger.ZLogError("ArrangeMode is empty/default value. Check to appsettings.json.");
             return 1;
         }
-        else if ( arrangeMode.CompareTo("pass") != 0 && arrangeMode.CompareTo("reject") != 0 )
+        else if ( arrangeMode.CompareTo("pass") != 0 && arrangeMode.CompareTo("reject") != 0
+                && arrangeMode.CompareTo("regex-pass") != 0 && arrangeMode.CompareTo("regex-reject") != 0)
         {
-            logger.ZLogError("ArrangeMode is not [pass]/[reject] value. Check to appsettings.json.");
+            logger.ZLogError("ArrangeMode is not [pass]/[reject]/[regex-pass]/[regex-reject] value. Check to appsettings.json.");
             return 1;
         }
         if (String.IsNullOrEmpty(arrangeWord) || arrangeWord.CompareTo("DEFAULT") == 0)
@@ -231,7 +233,7 @@ public class CsvApp : ConsoleAppBase
                             logger.ZLogDebug("[pass] index1 is {0}. no Add.", index1);
                         }
                     }
-                    else
+                    else if (arrangeMode.CompareTo("reject") == 0)
                     {
                         // reject
                         if (arrangeWord.CompareTo(index1) != 0)
@@ -251,6 +253,58 @@ public class CsvApp : ConsoleAppBase
                         else
                         {
                             logger.ZLogDebug("[reject] index1 is {0}. no Add.", index1);
+                        }
+                    }
+                    else if (arrangeMode.CompareTo("regex-pass") == 0)
+                    {
+                        // regex-pass
+                        if (String.IsNullOrEmpty(index1))
+                        {
+                            logger.ZLogDebug("[regex-pass] index1 is null/empty value. no Add.");
+                        }
+                        else if (Regex.IsMatch(index1, arrangeWord, RegexOptions.None))
+                        {
+                            logger.ZLogDebug("[regex-pass] index1 is {0}. Add!", index1);
+                            for (int i = 0; i < columnCount; i++)
+                            {
+                                var tempValue = csvReader.GetField(i);
+                                if (string.IsNullOrEmpty(tempValue))
+                                {
+                                    tempValue = "";
+                                }
+                                tempData.Add(i.ToString(), tempValue);
+                            }
+                            tempCsv.Add(tempData);
+                        }
+                        else
+                        {
+                            logger.ZLogDebug("[regex-pass] index1 is {0}. no Add.", index1);
+                        }
+                    }
+                    else if (arrangeMode.CompareTo("regex-reject") == 0)
+                    {
+                        // regex-reject
+                        if (String.IsNullOrEmpty(index1))
+                        {
+                            logger.ZLogDebug("[regex-reject] index1 is null/empty value. no Add.");
+                        }
+                        else if (!Regex.IsMatch(index1, arrangeWord, RegexOptions.None))
+                        {
+                            logger.ZLogDebug("[regex-reject] index1 is {0}. Add!", index1);
+                            for (int i = 0; i < columnCount; i++)
+                            {
+                                var tempValue = csvReader.GetField(i);
+                                if (string.IsNullOrEmpty(tempValue))
+                                {
+                                    tempValue = "";
+                                }
+                                tempData.Add(i.ToString(), tempValue);
+                            }
+                            tempCsv.Add(tempData);
+                        }
+                        else
+                        {
+                            logger.ZLogDebug("[regex-reject] index1 is {0}. no Add.", index1);
                         }
                     }
                  }
