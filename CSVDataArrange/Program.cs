@@ -322,6 +322,7 @@ public class CsvApp : ConsoleAppBase
             Delimiter = outputCsvDelimiter,
             NewLine = outputCsvNewLine,
             Encoding = encodeingOutput,
+            ShouldQuote = x => true,
         };
         using (var stream = File.OpenWrite(outputCsvFile))
         using (var writerWriter = new StreamWriter(stream, Encoding.UTF8))
