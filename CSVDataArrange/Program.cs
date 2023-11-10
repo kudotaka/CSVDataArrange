@@ -71,16 +71,17 @@ public class CsvApp : ConsoleAppBase
     }
 
     [Command("arrange")]
-    public int Arrange(string inputfile, string outputfile)
+    public int Arrange(string inputfile, string inputfiletemp, string outputfile)
     {
         logger.ZLogDebug("start arrange()");
 
-        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(outputfile))
+        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(inputfiletemp) || string.IsNullOrEmpty(outputfile))
         {
             logger.ZLogError($"Error: arg is NullOrEmpty.");
             return 1;
         }
         string inputCsvFile = inputfile;
+        string inputCsvFileTemp = inputfiletemp;
         string outputCsvFile = outputfile;
 
         bool bInputCsvHasHeader = false;
@@ -188,6 +189,18 @@ public class CsvApp : ConsoleAppBase
             encodeingOutput = Encoding.GetEncoding("Shift_JIS");
         }
 
+        string tempTextReplase = "";
+        using (var textStreamReader = new StreamReader(inputCsvFile, encodeingInput))
+        {
+            var tempText = textStreamReader.ReadToEnd();
+            tempTextReplase = tempText.Replace("\n", "\r\n").Replace("\r\r", "\r");
+        }
+        using (var textStreamWriter = new StreamWriter(inputCsvFileTemp, false, encodeingInput))
+        {
+            textStreamWriter.Write(tempTextReplase);
+            textStreamWriter.Flush();
+        }
+
         List<Dictionary<string, string>> tempCsv = new List<Dictionary<string, string>>();
         var readCsvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
@@ -197,7 +210,7 @@ public class CsvApp : ConsoleAppBase
             Encoding = encodeingInput,
             DetectColumnCountChanges = false,
         };
-        using (var csvStreamReader = new StreamReader(inputCsvFile))
+        using (var csvStreamReader = new StreamReader(inputCsvFileTemp))
         {
             using (var csvReader = new CsvReader(csvStreamReader, readCsvConfig))
             {
