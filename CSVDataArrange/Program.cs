@@ -46,6 +46,7 @@ public class MyConfig
     public string ArrangeMode {get; set;} = "DEFAULT";
     public string ArrangeWord {get; set;} = "DEFAULT";
     public int ArrangeIndex {get; set;} = -1;
+    public string ExtractIndexs {get; set;} = "DEFAULT";
     public UInt32 ColumnCount {get; set;} = 0;
     public string InputCsvDelimiter {get; set;} = "DEFAULT";
     public string InputCsvEncoding {get; set;} = "DEFAULT";
@@ -321,6 +322,194 @@ public class CsvApp : ConsoleAppBase
                         }
                     }
                  }
+            }
+        }
+
+
+        if (File.Exists(outputCsvFile))
+        {
+            File.Delete(outputCsvFile);
+        }
+        var writeCsvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = false,
+            Delimiter = outputCsvDelimiter,
+            NewLine = outputCsvNewLine,
+            Encoding = encodeingOutput,
+            ShouldQuote = x => true,
+        };
+        using (var stream = File.OpenWrite(outputCsvFile))
+        using (var writerWriter = new StreamWriter(stream, Encoding.UTF8))
+        {
+            // header
+            writerWriter.NewLine = outputCsvNewLine;
+            writerWriter.WriteLine(outputCsvHeaderWord);
+
+            // data
+            using (var csvWriter = new CsvWriter(writerWriter, writeCsvConfig))
+            {
+                foreach (var dic in tempCsv)
+                {
+                    for (int i = 0; i < columnCount; i++)
+                    {
+                        csvWriter.WriteField(dic[i.ToString()]);
+                    }
+                    csvWriter.NextRecord();
+                }
+            }
+        }
+
+        logger.ZLogInformation("FILE:{0} is success.", inputCsvFile);
+        return 0;
+    }
+
+    [Command("extract")]
+    public int Extract(string inputfile, string inputfiletemp, string outputfile)
+    {
+        logger.ZLogDebug("start extract()");
+
+        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(inputfiletemp) || string.IsNullOrEmpty(outputfile))
+        {
+            logger.ZLogError($"Error: arg is NullOrEmpty.");
+            return 1;
+        }
+        string inputCsvFile = inputfile;
+        string inputCsvFileTemp = inputfiletemp;
+        string outputCsvFile = outputfile;
+
+        bool bInputCsvHasHeader = false;
+        var encodeingInput = Encoding.UTF8; // default encodeing
+        var encodeingOutput = Encoding.UTF8; // default encodeing
+
+        string extractIndexs = config.Value.ExtractIndexs;
+        UInt32 columnCount = config.Value.ColumnCount;
+        string inputCsvDelimiter = config.Value.InputCsvDelimiter;
+        string inputCsvEncoding = config.Value.InputCsvEncoding;
+        string inputCsvNewLine = config.Value.InputCsvNewLine;
+        string inputCsvHasHeader = config.Value.InputCsvHasHeader;
+        string outputCsvDelimiter = config.Value.OutputCsvDelimiter;
+        string outputCsvEncoding = config.Value.OutputCsvEncoding;
+        string outputCsvNewLine = config.Value.OutputCsvNewLine;
+        string outputCsvHeaderWord = config.Value.OutputCsvHeaderWord;
+
+        if (String.IsNullOrEmpty(extractIndexs) || extractIndexs.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("ExtractIndexs is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+        if (columnCount == 0)
+        {
+            logger.ZLogError("ColumnCount is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+        if (String.IsNullOrEmpty(inputCsvDelimiter) || inputCsvDelimiter.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("InputCsvDelimiter is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+        if (String.IsNullOrEmpty(inputCsvEncoding) || inputCsvEncoding.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("InputCsvEncoding is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+        if (String.IsNullOrEmpty(inputCsvNewLine) || inputCsvNewLine.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("InputCsvNewLine is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+        if (String.IsNullOrEmpty(inputCsvHasHeader) || inputCsvHasHeader.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("InputCsvHasHeader is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+
+        if (String.IsNullOrEmpty(outputCsvDelimiter) || outputCsvDelimiter.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("OutputCsvDelimiter is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+        if (String.IsNullOrEmpty(outputCsvEncoding) || outputCsvEncoding.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("OutputCsvEncoding is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+        if (String.IsNullOrEmpty(outputCsvNewLine) || outputCsvNewLine.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("OutputCsvNewLine is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+        if (String.IsNullOrEmpty(outputCsvHeaderWord) || outputCsvHeaderWord.CompareTo("DEFAULT") == 0)
+        {
+            logger.ZLogError("HeaderWord is empty/default value. Check to appsettings.json.");
+            return 1;
+        }
+
+        try
+        {
+            bInputCsvHasHeader = bool.Parse(inputCsvHasHeader);
+        }
+        catch (System.Exception)
+        {
+            logger.ZLogError("InputCsvHasHeader is not Parse. Check to appsettings.json.");
+            return 1;
+        }
+        if (string.Equals("Shift_JIS", inputCsvEncoding))
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            encodeingInput = Encoding.GetEncoding("Shift_JIS");
+        }
+        if (string.Equals("Shift_JIS", outputCsvEncoding))
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            encodeingOutput = Encoding.GetEncoding("Shift_JIS");
+        }
+
+        string tempTextReplase = "";
+        using (var textStreamReader = new StreamReader(inputCsvFile, encodeingInput))
+        {
+            var tempText = textStreamReader.ReadToEnd();
+            tempTextReplase = tempText.Replace("\n", "\r\n").Replace("\r\r", "\r");
+        }
+        using (var textStreamWriter = new StreamWriter(inputCsvFileTemp, false, encodeingInput))
+        {
+            textStreamWriter.Write(tempTextReplase);
+            textStreamWriter.Flush();
+        }
+
+        List<Dictionary<string, string>> tempCsv = new List<Dictionary<string, string>>();
+        var readCsvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = bInputCsvHasHeader,
+            Delimiter = inputCsvDelimiter,
+            NewLine = inputCsvNewLine,
+            Encoding = encodeingInput,
+            DetectColumnCountChanges = false,
+        };
+        using (var csvStreamReader = new StreamReader(inputCsvFileTemp))
+        {
+            using (var csvReader = new CsvReader(csvStreamReader, readCsvConfig))
+            {
+                if (bInputCsvHasHeader)
+                {
+                    csvReader.Read();
+                    csvReader.ReadHeader();
+                }
+                while (csvReader.Read())
+                {
+                    var array1 = extractIndexs.Split(',');
+                    Dictionary<string, string> tempData = new Dictionary<string, string>();
+                    for (int i = 0; i < array1.Length; i++)
+                    {
+                        logger.ZLogDebug("{0}. Add!", array1[i]);
+                        var tempValue = csvReader.GetField(int.Parse(array1[i]));
+                        if (string.IsNullOrEmpty(tempValue))
+                        {
+                            tempValue = "";
+                        }
+                        tempData.Add(i.ToString(), tempValue);
+                    }
+                    tempCsv.Add(tempData);
+                }
             }
         }
 
