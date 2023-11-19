@@ -46,8 +46,9 @@ public class MyConfig
     public string ArrangeMode {get; set;} = "DEFAULT";
     public string ArrangeWord {get; set;} = "DEFAULT";
     public int ArrangeIndex {get; set;} = -1;
+    public UInt32 ArrangeColumnCount {get; set;} = 0;
     public string ExtractIndexs {get; set;} = "DEFAULT";
-    public UInt32 ColumnCount {get; set;} = 0;
+    public UInt32 ExtractColumnCount {get; set;} = 0;
     public string InputCsvDelimiter {get; set;} = "DEFAULT";
     public string InputCsvEncoding {get; set;} = "DEFAULT";
     public string InputCsvNewLine {get; set;} = "DEFAULT";
@@ -92,7 +93,7 @@ public class CsvApp : ConsoleAppBase
         string arrangeMode = config.Value.ArrangeMode;
         string arrangeWord = config.Value.ArrangeWord;
         int arrangeIndex = config.Value.ArrangeIndex;
-        UInt32 columnCount = config.Value.ColumnCount;
+        UInt32 arrangeColumnCount = config.Value.ArrangeColumnCount;
         string inputCsvDelimiter = config.Value.InputCsvDelimiter;
         string inputCsvEncoding = config.Value.InputCsvEncoding;
         string inputCsvNewLine = config.Value.InputCsvNewLine;
@@ -123,9 +124,9 @@ public class CsvApp : ConsoleAppBase
             logger.ZLogError("ArrangeIndex is empty/default value. Check to appsettings.json.");
             return 1;
         }
-        if (columnCount == 0)
+        if (arrangeColumnCount == 0)
         {
-            logger.ZLogError("ColumnCount is empty/default value. Check to appsettings.json.");
+            logger.ZLogError("ArrangeColumnCount is empty/default value. Check to appsettings.json.");
             return 1;
         }
         if (String.IsNullOrEmpty(inputCsvDelimiter) || inputCsvDelimiter.CompareTo("DEFAULT") == 0)
@@ -231,7 +232,7 @@ public class CsvApp : ConsoleAppBase
                         if (arrangeWord.CompareTo(index1) == 0)
                         {
                             logger.ZLogDebug("[pass] index1 is {0}. Add!", index1);
-                            for (int i = 0; i < columnCount; i++)
+                            for (int i = 0; i < arrangeColumnCount; i++)
                             {
                                 var tempValue = csvReader.GetField(i);
                                 if (string.IsNullOrEmpty(tempValue))
@@ -253,7 +254,7 @@ public class CsvApp : ConsoleAppBase
                         if (arrangeWord.CompareTo(index1) != 0)
                         {
                             logger.ZLogDebug("[reject] index1 is {0}. Add!", index1);
-                            for (int i = 0; i < columnCount; i++)
+                            for (int i = 0; i < arrangeColumnCount; i++)
                             {
                                 var tempValue = csvReader.GetField(i);
                                 if (string.IsNullOrEmpty(tempValue))
@@ -279,7 +280,7 @@ public class CsvApp : ConsoleAppBase
                         else if (Regex.IsMatch(index1, arrangeWord, RegexOptions.None))
                         {
                             logger.ZLogDebug("[regex-pass] index1 is {0}. Add!", index1);
-                            for (int i = 0; i < columnCount; i++)
+                            for (int i = 0; i < arrangeColumnCount; i++)
                             {
                                 var tempValue = csvReader.GetField(i);
                                 if (string.IsNullOrEmpty(tempValue))
@@ -305,7 +306,7 @@ public class CsvApp : ConsoleAppBase
                         else if (!Regex.IsMatch(index1, arrangeWord, RegexOptions.None))
                         {
                             logger.ZLogDebug("[regex-reject] index1 is {0}. Add!", index1);
-                            for (int i = 0; i < columnCount; i++)
+                            for (int i = 0; i < arrangeColumnCount; i++)
                             {
                                 var tempValue = csvReader.GetField(i);
                                 if (string.IsNullOrEmpty(tempValue))
@@ -350,7 +351,7 @@ public class CsvApp : ConsoleAppBase
             {
                 foreach (var dic in tempCsv)
                 {
-                    for (int i = 0; i < columnCount; i++)
+                    for (int i = 0; i < arrangeColumnCount; i++)
                     {
                         csvWriter.WriteField(dic[i.ToString()]);
                     }
@@ -382,7 +383,7 @@ public class CsvApp : ConsoleAppBase
         var encodeingOutput = Encoding.UTF8; // default encodeing
 
         string extractIndexs = config.Value.ExtractIndexs;
-        UInt32 columnCount = config.Value.ColumnCount;
+        UInt32 extractColumnCount = config.Value.ExtractColumnCount;
         string inputCsvDelimiter = config.Value.InputCsvDelimiter;
         string inputCsvEncoding = config.Value.InputCsvEncoding;
         string inputCsvNewLine = config.Value.InputCsvNewLine;
@@ -397,9 +398,9 @@ public class CsvApp : ConsoleAppBase
             logger.ZLogError("ExtractIndexs is empty/default value. Check to appsettings.json.");
             return 1;
         }
-        if (columnCount == 0)
+        if (extractColumnCount == 0)
         {
-            logger.ZLogError("ColumnCount is empty/default value. Check to appsettings.json.");
+            logger.ZLogError("ExtractColumnCount is empty/default value. Check to appsettings.json.");
             return 1;
         }
         if (String.IsNullOrEmpty(inputCsvDelimiter) || inputCsvDelimiter.CompareTo("DEFAULT") == 0)
@@ -538,7 +539,7 @@ public class CsvApp : ConsoleAppBase
             {
                 foreach (var dic in tempCsv)
                 {
-                    for (int i = 0; i < columnCount; i++)
+                    for (int i = 0; i < extractColumnCount; i++)
                     {
                         csvWriter.WriteField(dic[i.ToString()]);
                     }
