@@ -49,14 +49,7 @@ public class MyConfig
     public UInt32 ArrangeColumnCount {get; set;} = 0;
     public string ExtractIndexs {get; set;} = "DEFAULT";
     public UInt32 ExtractColumnCount {get; set;} = 0;
-    public string InputCsvDelimiter {get; set;} = "DEFAULT";
-    public string InputCsvEncoding {get; set;} = "DEFAULT";
-    public string InputCsvNewLine {get; set;} = "DEFAULT";
     public string InputCsvHasHeader {get; set;} = "DEFAULT";
-    public string OutputCsvDelimiter {get; set;} = "DEFAULT";
-    public string OutputCsvEncoding {get; set;} = "DEFAULT";
-    public string OutputCsvNewLine {get; set;} = "DEFAULT";
-    public string OutputCsvHasHeader {get; set;} = "DEFAULT";
     public string OutputCsvHeaderWord {get; set;} = "DEFAULT";
 }
 
@@ -87,17 +80,29 @@ public class CsvApp : ConsoleAppBase
     }
 
     [Command("arrange")]
-    public int Arrange(string inputfile, string inputfiletemp, string outputfile)
+    public int Arrange(string inputfile, string filetemp, string outputfile, string inputencoding, string inputhasheader)
     {
         logger.ZLogDebug("start arrange()");
 
-        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(inputfiletemp) || string.IsNullOrEmpty(outputfile))
+        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(filetemp)
+        || string.IsNullOrEmpty(outputfile) || string.IsNullOrEmpty(inputencoding)
+        || string.IsNullOrEmpty(inputhasheader))
         {
             logger.ZLogError($"Error: arg is NullOrEmpty.");
             return 1;
         }
+        if (!(inputencoding.Equals("UTF-8") || inputencoding.Equals("Shift_JIS")))
+        {
+            logger.ZLogError($"Error: arg[inputencoding] is not [UTF-8]/[Shift_JIS] value.");
+            return 1;
+        }
+        if (!(inputhasheader.Equals("true") || inputhasheader.Equals("false")))
+        {
+            logger.ZLogError($"Error: arg[inputhasheader] is not [true]/[false] value.");
+            return 1;
+        }
         string inputCsvFile = inputfile;
-        string inputCsvFileTemp = inputfiletemp;
+        string inputCsvFileTemp = filetemp;
         string outputCsvFile = outputfile;
 
         bool bInputCsvHasHeader = false;
@@ -108,13 +113,12 @@ public class CsvApp : ConsoleAppBase
         string arrangeWord = config.Value.ArrangeWord;
         int arrangeIndex = config.Value.ArrangeIndex;
         UInt32 arrangeColumnCount = config.Value.ArrangeColumnCount;
-        string inputCsvDelimiter = config.Value.InputCsvDelimiter;
-        string inputCsvEncoding = config.Value.InputCsvEncoding;
-        string inputCsvNewLine = config.Value.InputCsvNewLine;
-        string inputCsvHasHeader = config.Value.InputCsvHasHeader;
-        string outputCsvDelimiter = config.Value.OutputCsvDelimiter;
-        string outputCsvEncoding = config.Value.OutputCsvEncoding;
-        string outputCsvNewLine = config.Value.OutputCsvNewLine;
+        string inputCsvDelimiter = ",";
+        string inputCsvEncoding = inputencoding;
+        string inputCsvNewLine = "\r\n";
+        string inputCsvHasHeader = inputhasheader;
+        string outputCsvDelimiter = ",";
+        string outputCsvNewLine = "\r\n";
         string outputCsvHeaderWord = config.Value.OutputCsvHeaderWord;
 
         if (String.IsNullOrEmpty(arrangeMode) || arrangeMode.CompareTo("DEFAULT") == 0)
@@ -143,42 +147,6 @@ public class CsvApp : ConsoleAppBase
             logger.ZLogError("ArrangeColumnCount is empty/default value. Check to appsettings.json.");
             return 1;
         }
-        if (String.IsNullOrEmpty(inputCsvDelimiter) || inputCsvDelimiter.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("InputCsvDelimiter is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(inputCsvEncoding) || inputCsvEncoding.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("InputCsvEncoding is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(inputCsvNewLine) || inputCsvNewLine.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("InputCsvNewLine is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(inputCsvHasHeader) || inputCsvHasHeader.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("InputCsvHasHeader is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-
-        if (String.IsNullOrEmpty(outputCsvDelimiter) || outputCsvDelimiter.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("OutputCsvDelimiter is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(outputCsvEncoding) || outputCsvEncoding.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("OutputCsvEncoding is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(outputCsvNewLine) || outputCsvNewLine.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("OutputCsvNewLine is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
         if (String.IsNullOrEmpty(outputCsvHeaderWord) || outputCsvHeaderWord.CompareTo("DEFAULT") == 0)
         {
             logger.ZLogError("HeaderWord is empty/default value. Check to appsettings.json.");
@@ -191,18 +159,13 @@ public class CsvApp : ConsoleAppBase
         }
         catch (System.Exception)
         {
-            logger.ZLogError("InputCsvHasHeader is not Parse. Check to appsettings.json.");
+            logger.ZLogError("InputCsvHasHeader is not Parse. Check to arg[inputhasheader].");
             return 1;
         }
         if (string.Equals("Shift_JIS", inputCsvEncoding))
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             encodeingInput = Encoding.GetEncoding("Shift_JIS");
-        }
-        if (string.Equals("Shift_JIS", outputCsvEncoding))
-        {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            encodeingOutput = Encoding.GetEncoding("Shift_JIS");
         }
         logger.ZLogDebug("encodeingInput:{0}, encodeingOutput:{1}", encodeingInput.EncodingName, encodeingOutput.EncodingName);
 
@@ -400,17 +363,29 @@ public class CsvApp : ConsoleAppBase
     }
 
     [Command("extract")]
-    public int Extract(string inputfile, string inputfiletemp, string outputfile)
+    public int Extract(string inputfile, string filetemp, string outputfile, string inputencoding, string inputhasheader)
     {
         logger.ZLogDebug("start extract()");
 
-        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(inputfiletemp) || string.IsNullOrEmpty(outputfile))
+        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(filetemp)
+         || string.IsNullOrEmpty(outputfile) || string.IsNullOrEmpty(inputencoding)
+         || string.IsNullOrEmpty(inputhasheader))
         {
             logger.ZLogError($"Error: arg is NullOrEmpty.");
             return 1;
         }
+        if (!(inputencoding.Equals("UTF-8") || inputencoding.Equals("Shift_JIS")))
+        {
+            logger.ZLogError($"Error: arg[inputencoding] is not [UTF-8]/[Shift_JIS] value.");
+            return 1;
+        }
+        if (!(inputhasheader.Equals("true") || inputhasheader.Equals("false")))
+        {
+            logger.ZLogError($"Error: arg[inputhasheader] is not [true]/[false] value.");
+            return 1;
+        }
         string inputCsvFile = inputfile;
-        string inputCsvFileTemp = inputfiletemp;
+        string inputCsvFileTemp = filetemp;
         string outputCsvFile = outputfile;
 
         bool bInputCsvHasHeader = false;
@@ -419,13 +394,12 @@ public class CsvApp : ConsoleAppBase
 
         string extractIndexs = config.Value.ExtractIndexs;
         UInt32 extractColumnCount = config.Value.ExtractColumnCount;
-        string inputCsvDelimiter = config.Value.InputCsvDelimiter;
-        string inputCsvEncoding = config.Value.InputCsvEncoding;
-        string inputCsvNewLine = config.Value.InputCsvNewLine;
-        string inputCsvHasHeader = config.Value.InputCsvHasHeader;
-        string outputCsvDelimiter = config.Value.OutputCsvDelimiter;
-        string outputCsvEncoding = config.Value.OutputCsvEncoding;
-        string outputCsvNewLine = config.Value.OutputCsvNewLine;
+        string inputCsvDelimiter = ",";
+        string inputCsvEncoding = inputencoding;
+        string inputCsvNewLine = "\r\n";
+        string inputCsvHasHeader = inputhasheader;
+        string outputCsvDelimiter = ",";
+        string outputCsvNewLine = "\r\n";
         string outputCsvHeaderWord = config.Value.OutputCsvHeaderWord;
 
         if (String.IsNullOrEmpty(extractIndexs) || extractIndexs.CompareTo("DEFAULT") == 0)
@@ -436,42 +410,6 @@ public class CsvApp : ConsoleAppBase
         if (extractColumnCount == 0)
         {
             logger.ZLogError("ExtractColumnCount is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(inputCsvDelimiter) || inputCsvDelimiter.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("InputCsvDelimiter is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(inputCsvEncoding) || inputCsvEncoding.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("InputCsvEncoding is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(inputCsvNewLine) || inputCsvNewLine.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("InputCsvNewLine is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(inputCsvHasHeader) || inputCsvHasHeader.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("InputCsvHasHeader is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-
-        if (String.IsNullOrEmpty(outputCsvDelimiter) || outputCsvDelimiter.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("OutputCsvDelimiter is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(outputCsvEncoding) || outputCsvEncoding.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("OutputCsvEncoding is empty/default value. Check to appsettings.json.");
-            return 1;
-        }
-        if (String.IsNullOrEmpty(outputCsvNewLine) || outputCsvNewLine.CompareTo("DEFAULT") == 0)
-        {
-            logger.ZLogError("OutputCsvNewLine is empty/default value. Check to appsettings.json.");
             return 1;
         }
         if (String.IsNullOrEmpty(outputCsvHeaderWord) || outputCsvHeaderWord.CompareTo("DEFAULT") == 0)
@@ -486,7 +424,7 @@ public class CsvApp : ConsoleAppBase
         }
         catch (System.Exception)
         {
-            logger.ZLogError("InputCsvHasHeader is not Parse. Check to appsettings.json.");
+            logger.ZLogError("InputCsvHasHeader is not Parse. Check to arg[inputhasheader].");
             return 1;
         }
         if (string.Equals("Shift_JIS", inputCsvEncoding))
@@ -494,11 +432,7 @@ public class CsvApp : ConsoleAppBase
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             encodeingInput = Encoding.GetEncoding("Shift_JIS");
         }
-        if (string.Equals("Shift_JIS", outputCsvEncoding))
-        {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            encodeingOutput = Encoding.GetEncoding("Shift_JIS");
-        }
+        logger.ZLogDebug("encodeingInput:{0}, encodeingOutput:{1}", encodeingInput.EncodingName, encodeingOutput.EncodingName);
 
         string tempTextReplase = "";
         using (var textStreamReader = new StreamReader(inputCsvFile, encodeingInput))
@@ -589,6 +523,38 @@ public class CsvApp : ConsoleAppBase
         }
 
         logger.ZLogInformation("FILE:{0} is success.", inputCsvFile);
+        return 0;
+    }
+
+    [Command("arrangeandextract")]
+    public int ArrangeAndExtract(string inputfile, string filetemp1, string filetemp2, string filetemp3, string outputfile, string inputencoding, string inputhasheader)
+    {
+        logger.ZLogDebug("start arrangeandextract()");
+
+        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(filetemp1)
+         || string.IsNullOrEmpty(filetemp2) || string.IsNullOrEmpty(filetemp3)
+         || string.IsNullOrEmpty(outputfile) || string.IsNullOrEmpty(inputencoding)
+         || string.IsNullOrEmpty(inputhasheader))
+        {
+            logger.ZLogError($"Error: arg is NullOrEmpty.");
+            return 1;
+        }
+
+        int iRet = 0;
+        iRet = Arrange(inputfile, filetemp1, filetemp2, inputencoding, inputhasheader);
+        if (iRet != 0)
+        {
+            logger.ZLogError($"Error: Arrange() is Error.");
+            return iRet;
+        }
+        iRet = Extract(filetemp2, filetemp3, outputfile, "UTF-8", "true");
+        if (iRet != 0)
+        {
+            logger.ZLogError($"Error: Extract() is Error.");
+            return iRet;
+        }
+
+        logger.ZLogInformation("FILE:{0} is success.", inputfile);
         return 0;
     }
 }
