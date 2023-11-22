@@ -60,6 +60,20 @@ public class MyConfig
     public string OutputCsvHeaderWord {get; set;} = "DEFAULT";
 }
 
+public static class MyUtility
+{
+    public static string convertUtf8String(Encoding srcEncode, Encoding dstEncode, string targetString)
+    {
+        if (srcEncode != dstEncode)
+        {
+            byte[] targetStringBytes = srcEncode.GetBytes(targetString);
+            byte[] convertUtf8Bytes = Encoding.Convert(srcEncode, dstEncode, targetStringBytes);
+            return dstEncode.GetString(convertUtf8Bytes);
+        }
+        return targetString;
+    }
+}
+
 [Command("csv")]
 public class CsvApp : ConsoleAppBase
 {
@@ -190,6 +204,7 @@ public class CsvApp : ConsoleAppBase
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             encodeingOutput = Encoding.GetEncoding("Shift_JIS");
         }
+        logger.ZLogDebug("encodeingInput:{0}, encodeingOutput:{1}", encodeingInput.EncodingName, encodeingOutput.EncodingName);
 
         string tempTextReplase = "";
         using (var textStreamReader = new StreamReader(inputCsvFile, encodeingInput))
@@ -212,7 +227,7 @@ public class CsvApp : ConsoleAppBase
             Encoding = encodeingInput,
             DetectColumnCountChanges = false,
         };
-        using (var csvStreamReader = new StreamReader(inputCsvFileTemp))
+        using (var csvStreamReader = new StreamReader(inputCsvFileTemp, encodeingInput))
         {
             using (var csvReader = new CsvReader(csvStreamReader, readCsvConfig))
             {
@@ -225,6 +240,10 @@ public class CsvApp : ConsoleAppBase
                 {
                     Dictionary<string, string> tempData = new Dictionary<string, string>();
                     var index1 = csvReader.GetField(arrangeIndex);
+                    if (!string.IsNullOrEmpty(index1))
+                    {
+                        index1 = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, index1);
+                    }
                     logger.ZLogDebug("index1:{0}", index1);
                     if (arrangeMode.CompareTo("pass") == 0)
                     {
@@ -238,6 +257,10 @@ public class CsvApp : ConsoleAppBase
                                 if (string.IsNullOrEmpty(tempValue))
                                 {
                                     tempValue = "";
+                                }
+                                else
+                                {
+                                    tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
                                 }
                                 tempData.Add(i.ToString(), tempValue);
                             }
@@ -260,6 +283,10 @@ public class CsvApp : ConsoleAppBase
                                 if (string.IsNullOrEmpty(tempValue))
                                 {
                                     tempValue = "";
+                                }
+                                else
+                                {
+                                    tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
                                 }
                                 tempData.Add(i.ToString(), tempValue);
                             }
@@ -287,6 +314,10 @@ public class CsvApp : ConsoleAppBase
                                 {
                                     tempValue = "";
                                 }
+                                else
+                                {
+                                    tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
+                                }
                                 tempData.Add(i.ToString(), tempValue);
                             }
                             tempCsv.Add(tempData);
@@ -312,6 +343,10 @@ public class CsvApp : ConsoleAppBase
                                 if (string.IsNullOrEmpty(tempValue))
                                 {
                                     tempValue = "";
+                                }
+                                else
+                                {
+                                    tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
                                 }
                                 tempData.Add(i.ToString(), tempValue);
                             }
@@ -340,7 +375,7 @@ public class CsvApp : ConsoleAppBase
             ShouldQuote = x => true,
         };
         using (var stream = File.OpenWrite(outputCsvFile))
-        using (var writerWriter = new StreamWriter(stream, Encoding.UTF8))
+        using (var writerWriter = new StreamWriter(stream, encodeingOutput))
         {
             // header
             writerWriter.NewLine = outputCsvNewLine;
@@ -486,7 +521,7 @@ public class CsvApp : ConsoleAppBase
             Encoding = encodeingInput,
             DetectColumnCountChanges = false,
         };
-        using (var csvStreamReader = new StreamReader(inputCsvFileTemp))
+        using (var csvStreamReader = new StreamReader(inputCsvFileTemp, encodeingInput))
         {
             using (var csvReader = new CsvReader(csvStreamReader, readCsvConfig))
             {
@@ -507,6 +542,11 @@ public class CsvApp : ConsoleAppBase
                         {
                             tempValue = "";
                         }
+                        else
+                        {
+                            tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
+                        }
+
                         tempData.Add(i.ToString(), tempValue);
                     }
                     tempCsv.Add(tempData);
@@ -528,7 +568,7 @@ public class CsvApp : ConsoleAppBase
             ShouldQuote = x => true,
         };
         using (var stream = File.OpenWrite(outputCsvFile))
-        using (var writerWriter = new StreamWriter(stream, Encoding.UTF8))
+        using (var writerWriter = new StreamWriter(stream, encodeingOutput))
         {
             // header
             writerWriter.NewLine = outputCsvNewLine;
