@@ -207,116 +207,121 @@ public class CsvApp : ConsoleAppBase
                         index1 = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, index1);
                     }
                     logger.ZLogDebug("index1:{0}", index1);
-                    if (arrangeMode.CompareTo("pass") == 0)
+
+                    var array1 = arrangeWord.Split(',');
+                    for (int j = 0; j < array1.Length; j++)
                     {
-                        // pass
-                        if (arrangeWord.CompareTo(index1) == 0)
+                        if (arrangeMode.CompareTo("pass") == 0)
                         {
-                            logger.ZLogDebug("[pass] index1 is {0}. Add!", index1);
-                            for (int i = 0; i < arrangeColumnCount; i++)
+                            // pass
+                            if (array1[j].CompareTo(index1) == 0)
                             {
-                                var tempValue = csvReader.GetField(i);
-                                if (string.IsNullOrEmpty(tempValue))
+                                logger.ZLogDebug("[pass] index1 is {0}. ArrangeWord is {1}. Add!", index1, array1[j]);
+                                for (int i = 0; i < arrangeColumnCount; i++)
                                 {
-                                    tempValue = "";
+                                    var tempValue = csvReader.GetField(i);
+                                    if (string.IsNullOrEmpty(tempValue))
+                                    {
+                                        tempValue = "";
+                                    }
+                                    else
+                                    {
+                                        tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
+                                    }
+                                    tempData.Add(i.ToString(), tempValue);
                                 }
-                                else
-                                {
-                                    tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
-                                }
-                                tempData.Add(i.ToString(), tempValue);
+                                tempCsv.Add(tempData);
                             }
-                            tempCsv.Add(tempData);
-                        }
-                        else
-                        {
-                            logger.ZLogDebug("[pass] index1 is {0}. no Add.", index1);
-                        }
-                    }
-                    else if (arrangeMode.CompareTo("reject") == 0)
-                    {
-                        // reject
-                        if (arrangeWord.CompareTo(index1) != 0)
-                        {
-                            logger.ZLogDebug("[reject] index1 is {0}. Add!", index1);
-                            for (int i = 0; i < arrangeColumnCount; i++)
+                            else
                             {
-                                var tempValue = csvReader.GetField(i);
-                                if (string.IsNullOrEmpty(tempValue))
-                                {
-                                    tempValue = "";
-                                }
-                                else
-                                {
-                                    tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
-                                }
-                                tempData.Add(i.ToString(), tempValue);
+                                logger.ZLogDebug("[pass] index1 is {0}. ArrangeWord is {1}. no Add.", index1, array1[j]);
                             }
-                            tempCsv.Add(tempData);
                         }
-                        else
+                        else if (arrangeMode.CompareTo("reject") == 0)
                         {
-                            logger.ZLogDebug("[reject] index1 is {0}. no Add.", index1);
-                        }
-                    }
-                    else if (arrangeMode.CompareTo("regex-pass") == 0)
-                    {
-                        // regex-pass
-                        if (String.IsNullOrEmpty(index1))
-                        {
-                            logger.ZLogDebug("[regex-pass] index1 is null/empty value. no Add.");
-                        }
-                        else if (Regex.IsMatch(index1, arrangeWord, RegexOptions.None))
-                        {
-                            logger.ZLogDebug("[regex-pass] index1 is {0}. Add!", index1);
-                            for (int i = 0; i < arrangeColumnCount; i++)
+                            // reject
+                            if (array1[j].CompareTo(index1) != 0)
                             {
-                                var tempValue = csvReader.GetField(i);
-                                if (string.IsNullOrEmpty(tempValue))
+                                logger.ZLogDebug("[reject] index1 is {0}. ArrangeWord is {1}. Add!", index1, array1[j]);
+                                for (int i = 0; i < arrangeColumnCount; i++)
                                 {
-                                    tempValue = "";
+                                    var tempValue = csvReader.GetField(i);
+                                    if (string.IsNullOrEmpty(tempValue))
+                                    {
+                                        tempValue = "";
+                                    }
+                                    else
+                                    {
+                                        tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
+                                    }
+                                    tempData.Add(i.ToString(), tempValue);
                                 }
-                                else
-                                {
-                                    tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
-                                }
-                                tempData.Add(i.ToString(), tempValue);
+                                tempCsv.Add(tempData);
                             }
-                            tempCsv.Add(tempData);
-                        }
-                        else
-                        {
-                            logger.ZLogDebug("[regex-pass] index1 is {0}. no Add.", index1);
-                        }
-                    }
-                    else if (arrangeMode.CompareTo("regex-reject") == 0)
-                    {
-                        // regex-reject
-                        if (String.IsNullOrEmpty(index1))
-                        {
-                            logger.ZLogDebug("[regex-reject] index1 is null/empty value. no Add.");
-                        }
-                        else if (!Regex.IsMatch(index1, arrangeWord, RegexOptions.None))
-                        {
-                            logger.ZLogDebug("[regex-reject] index1 is {0}. Add!", index1);
-                            for (int i = 0; i < arrangeColumnCount; i++)
+                            else
                             {
-                                var tempValue = csvReader.GetField(i);
-                                if (string.IsNullOrEmpty(tempValue))
-                                {
-                                    tempValue = "";
-                                }
-                                else
-                                {
-                                    tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
-                                }
-                                tempData.Add(i.ToString(), tempValue);
+                                logger.ZLogDebug("[reject] index1 is {0}. ArrangeWord is {1}. no Add.", index1, array1[j]);
                             }
-                            tempCsv.Add(tempData);
                         }
-                        else
+                        else if (arrangeMode.CompareTo("regex-pass") == 0)
                         {
-                            logger.ZLogDebug("[regex-reject] index1 is {0}. no Add.", index1);
+                            // regex-pass
+                            if (String.IsNullOrEmpty(index1))
+                            {
+                                logger.ZLogDebug("[regex-pass] index1 is null/empty value. no Add.");
+                            }
+                            else if (Regex.IsMatch(index1, array1[j], RegexOptions.None))
+                            {
+                                logger.ZLogDebug("[regex-pass] index1 is {0}. ArrangeWord is {1}. Add!", index1, array1[j]);
+                                for (int i = 0; i < arrangeColumnCount; i++)
+                                {
+                                    var tempValue = csvReader.GetField(i);
+                                    if (string.IsNullOrEmpty(tempValue))
+                                    {
+                                        tempValue = "";
+                                    }
+                                    else
+                                    {
+                                        tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
+                                    }
+                                    tempData.Add(i.ToString(), tempValue);
+                                }
+                                tempCsv.Add(tempData);
+                            }
+                            else
+                            {
+                                logger.ZLogDebug("[regex-pass] index1 is {0}. ArrangeWord is {1}. no Add.", index1, array1[j]);
+                            }
+                        }
+                        else if (arrangeMode.CompareTo("regex-reject") == 0)
+                        {
+                            // regex-reject
+                            if (String.IsNullOrEmpty(index1))
+                            {
+                                logger.ZLogDebug("[regex-reject] index1 is null/empty value. no Add.");
+                            }
+                            else if (!Regex.IsMatch(index1, array1[j], RegexOptions.None))
+                            {
+                                logger.ZLogDebug("[regex-reject] index1 is {0}. ArrangeWord is {1}. Add!", index1, array1[j]);
+                                for (int i = 0; i < arrangeColumnCount; i++)
+                                {
+                                    var tempValue = csvReader.GetField(i);
+                                    if (string.IsNullOrEmpty(tempValue))
+                                    {
+                                        tempValue = "";
+                                    }
+                                    else
+                                    {
+                                        tempValue = MyUtility.convertUtf8String(encodeingInput, encodeingOutput, tempValue);
+                                    }
+                                    tempData.Add(i.ToString(), tempValue);
+                                }
+                                tempCsv.Add(tempData);
+                            }
+                            else
+                            {
+                                logger.ZLogDebug("[regex-reject] index1 is {0}. ArrangeWord is {1}. no Add.", index1, array1[j]);
+                            }
                         }
                     }
                  }
