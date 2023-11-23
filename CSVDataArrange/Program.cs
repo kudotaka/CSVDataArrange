@@ -49,7 +49,6 @@ public class MyConfig
     public UInt32 ArrangeColumnCount {get; set;} = 0;
     public string ExtractIndexs {get; set;} = "DEFAULT";
     public UInt32 ExtractColumnCount {get; set;} = 0;
-    public string InputCsvHasHeader {get; set;} = "DEFAULT";
     public string OutputCsvHeaderWord {get; set;} = "DEFAULT";
 }
 
