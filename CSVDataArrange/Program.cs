@@ -47,6 +47,14 @@ public class MyConfig
     public string ArrangeWord {get; set;} = "DEFAULT";
     public int ArrangeIndex {get; set;} = -1;
     public UInt32 ArrangeColumnCount {get; set;} = 0;
+    public string Arrange2Mode {get; set;} = "DEFAULT";
+    public string Arrange2Word {get; set;} = "DEFAULT";
+    public int Arrange2Index {get; set;} = -1;
+    public UInt32 Arrange2ColumnCount {get; set;} = 0;
+    public string Arrange3Mode {get; set;} = "DEFAULT";
+    public string Arrange3Word {get; set;} = "DEFAULT";
+    public int Arrange3Index {get; set;} = -1;
+    public UInt32 Arrange3ColumnCount {get; set;} = 0;
     public string ExtractIndexs {get; set;} = "DEFAULT";
     public UInt32 ExtractColumnCount {get; set;} = 0;
     public string OutputCsvHeaderWord {get; set;} = "DEFAULT";
@@ -64,6 +72,66 @@ public static class MyUtility
         }
         return targetString;
     }
+
+    public static string selectArrangeWord(IOptions<MyConfig> myConfig, int arrangeTime)
+    {
+        switch (arrangeTime)
+        {
+            case 1:
+                return myConfig.Value.ArrangeWord;
+            case 2:
+                return myConfig.Value.Arrange2Word;
+            case 3:
+                return myConfig.Value.Arrange3Word;
+            default:
+                return "DEFAULT";
+        }
+    }
+
+    public static string selectArrangeMode(IOptions<MyConfig> myConfig, int arrangeTime)
+    {
+        switch (arrangeTime)
+        {
+            case 1:
+                return myConfig.Value.ArrangeMode;
+            case 2:
+                return myConfig.Value.Arrange2Mode;
+            case 3:
+                return myConfig.Value.Arrange3Mode;
+            default:
+                return "DEFAULT";
+        }
+    }
+
+    public static int selectArrangeIndex(IOptions<MyConfig> myConfig, int arrangeTime)
+    {
+        switch (arrangeTime)
+        {
+            case 1:
+                return myConfig.Value.ArrangeIndex;
+            case 2:
+                return myConfig.Value.Arrange2Index;
+            case 3:
+                return myConfig.Value.Arrange3Index;
+            default:
+                return -1;
+        }
+    }
+
+    public static UInt32 selectArrangeColumnCount(IOptions<MyConfig> myConfig, int arrangeTime)
+    {
+        switch (arrangeTime)
+        {
+            case 1:
+                return myConfig.Value.ArrangeColumnCount;
+            case 2:
+                return myConfig.Value.Arrange2ColumnCount;
+            case 3:
+                return myConfig.Value.Arrange3ColumnCount;
+            default:
+                return 0;
+        }
+    }
 }
 
 [Command("csv")]
@@ -79,7 +147,7 @@ public class CsvApp : ConsoleAppBase
     }
 
     [Command("arrange")]
-    public int Arrange(string inputfile, string filetemp, string outputfile, string inputencoding, string inputhasheader)
+    public int Arrange(string inputfile, string filetemp, string outputfile, string inputencoding, string inputhasheader, int arrangeTime = 1)
     {
         logger.ZLogDebug("start arrange()");
 
@@ -108,10 +176,10 @@ public class CsvApp : ConsoleAppBase
         var encodeingInput = Encoding.UTF8; // default encodeing
         var encodeingOutput = Encoding.UTF8; // default encodeing
 
-        string arrangeMode = config.Value.ArrangeMode;
-        string arrangeWord = config.Value.ArrangeWord;
-        int arrangeIndex = config.Value.ArrangeIndex;
-        UInt32 arrangeColumnCount = config.Value.ArrangeColumnCount;
+        string arrangeMode = MyUtility.selectArrangeMode(config, arrangeTime);
+        string arrangeWord = MyUtility.selectArrangeWord(config, arrangeTime);
+        int arrangeIndex = MyUtility.selectArrangeIndex(config, arrangeTime);
+        UInt32 arrangeColumnCount = MyUtility.selectArrangeColumnCount(config, arrangeTime);
         string inputCsvDelimiter = ",";
         string inputCsvEncoding = inputencoding;
         string inputCsvNewLine = "\r\n";
@@ -552,6 +620,91 @@ public class CsvApp : ConsoleAppBase
             return iRet;
         }
         iRet = Extract(filetemp2, filetemp3, outputfile, "UTF-8", "true");
+        if (iRet != 0)
+        {
+            logger.ZLogError($"Error: Extract() is Error.");
+            return iRet;
+        }
+
+        logger.ZLogInformation("FILE:{0} is success.", inputfile);
+        return 0;
+    }
+
+    [Command("arrange2andextract")]
+    public int Arrange2AndExtract(string inputfile, string filetemp1, string filetemp2, string filetemp3, string filetemp4, string filetemp5, string outputfile, string inputencoding, string inputhasheader)
+    {
+        logger.ZLogDebug("start arrange2andextract()");
+
+        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(filetemp1)
+         || string.IsNullOrEmpty(filetemp2) || string.IsNullOrEmpty(filetemp3)
+         || string.IsNullOrEmpty(filetemp4) || string.IsNullOrEmpty(filetemp5)
+         || string.IsNullOrEmpty(outputfile) || string.IsNullOrEmpty(inputencoding)
+         || string.IsNullOrEmpty(inputhasheader))
+        {
+            logger.ZLogError($"Error: arg is NullOrEmpty.");
+            return 1;
+        }
+
+        int iRet = 0;
+        iRet = Arrange(inputfile, filetemp1, filetemp2, inputencoding, inputhasheader, 1);
+        if (iRet != 0)
+        {
+            logger.ZLogError($"Error: 1st Arrange() is Error.");
+            return iRet;
+        }
+        iRet = Arrange(filetemp2, filetemp3, filetemp4, "UTF-8", "true", 2);
+        if (iRet != 0)
+        {
+            logger.ZLogError($"Error: 2nd Arrange() is Error.");
+            return iRet;
+        }
+        iRet = Extract(filetemp4, filetemp5, outputfile, "UTF-8", "true");
+        if (iRet != 0)
+        {
+            logger.ZLogError($"Error: Extract() is Error.");
+            return iRet;
+        }
+
+        logger.ZLogInformation("FILE:{0} is success.", inputfile);
+        return 0;
+    }
+
+    [Command("arrange3andextract")]
+    public int Arrange3AndExtract(string inputfile, string filetemp1, string filetemp2, string filetemp3, string filetemp4, string filetemp5, string filetemp6, string filetemp7, string outputfile, string inputencoding, string inputhasheader)
+    {
+        logger.ZLogDebug("start arrange3andextract()");
+
+        if (string.IsNullOrEmpty(inputfile) || string.IsNullOrEmpty(filetemp1)
+         || string.IsNullOrEmpty(filetemp2) || string.IsNullOrEmpty(filetemp3)
+         || string.IsNullOrEmpty(filetemp4) || string.IsNullOrEmpty(filetemp5)
+         || string.IsNullOrEmpty(filetemp6) || string.IsNullOrEmpty(filetemp7)
+         || string.IsNullOrEmpty(outputfile) || string.IsNullOrEmpty(inputencoding)
+         || string.IsNullOrEmpty(inputhasheader))
+        {
+            logger.ZLogError($"Error: arg is NullOrEmpty.");
+            return 1;
+        }
+
+        int iRet = 0;
+        iRet = Arrange(inputfile, filetemp1, filetemp2, inputencoding, inputhasheader, 1);
+        if (iRet != 0)
+        {
+            logger.ZLogError($"Error: 1st Arrange() is Error.");
+            return iRet;
+        }
+        iRet = Arrange(filetemp2, filetemp3, filetemp4, "UTF-8", "true", 2);
+        if (iRet != 0)
+        {
+            logger.ZLogError($"Error: 2nd Arrange() is Error.");
+            return iRet;
+        }
+        iRet = Arrange(filetemp4, filetemp5, filetemp6, "UTF-8", "true", 3);
+        if (iRet != 0)
+        {
+            logger.ZLogError($"Error: 3rd Arrange() is Error.");
+            return iRet;
+        }
+        iRet = Extract(filetemp6, filetemp7, outputfile, "UTF-8", "true");
         if (iRet != 0)
         {
             logger.ZLogError($"Error: Extract() is Error.");
